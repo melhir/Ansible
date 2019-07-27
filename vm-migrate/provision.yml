@@ -1,0 +1,18 @@
+########
+########
+# Prerequisite:
+# - prepared host with ansible key and available through lan and have access to internet
+# - filled hosts file with virtual machine that need to be migrated
+# - prepared xen bridges 
+  ###
+- hosts: hypervisors
+  user: ansible 
+  vars_files:
+    - vars/vms.yml
+  roles: 
+    - prepare_migration
+    - migrate_vms
+    - restore_vms
+    - clean_after
+  become: yes
+  

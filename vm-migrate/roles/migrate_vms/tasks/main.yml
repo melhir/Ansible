@@ -1,0 +1,9 @@
+---
+ - name: Collect all necessary facts and set them if needed
+   include_tasks: set_facts.yml
+ - name: copy lvms of all VMs to target 
+   include_tasks: migrate_vm.yml
+   with_items: "{{ xen_vman_vms }}"
+   when: vm.hypervisor == inventory_hostname
+   loop_control:
+    loop_var: vm

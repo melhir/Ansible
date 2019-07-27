@@ -1,0 +1,14 @@
+---
+ xen_vman_vms:
+  - name: VM01
+    hypervisor: H01
+    target: H02
+    vgs: VM
+    migration: temp
+    migration_size: 20g
+  - name: VM02
+    hypervisor: H01
+    target: H02 
+    vgs: VM
+    migration: temp
+    migration_size: 20g

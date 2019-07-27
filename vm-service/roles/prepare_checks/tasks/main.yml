@@ -1,0 +1,126 @@
+---
+# - name: Upgrade installed packages
+#   become: true
+#   apt:
+#     upgrade: safe
+    ####
+- name: Installing aptitude
+  apt:
+    name: aptitude
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing mc
+  apt:
+    name: mc
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing bash-completion
+  apt:
+    name: bash-completion
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing net-tools
+  apt:
+    name: net-tools
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing rsync
+  apt:
+    name: rsync
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing gawk
+  apt:
+    name: gawk
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing dc
+  apt:
+    name: dc
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Installing tzdata
+  apt:
+    name: tzdata
+    state: present
+    force: yes
+    update_cache: yes
+- name: Ensure a locale pl_PL exists
+  locale_gen:
+    name: pl_PL
+    state: present
+- name: Ensure a locale pl_PL.UTF-8 exists
+  locale_gen:
+    name: pl_PL.UTF-8
+    state: present
+- name: Set timezone
+  timezone:
+    name: "{{ ntp_timezone }}"
+    ####
+- name: Installing nagios-nrpe-server
+  apt:
+    name: nagios-nrpe-server
+    state: present
+    force: yes
+    update_cache: yes
+- name: Installing nagios-plugins 
+  apt: 
+    name: nagios-plugins 
+    state: present
+    force: yes
+    update_cache: yes
+    ####
+- name: Create nrpe.cfg from template
+  template: >
+    src="nrpe.cfg.j2"
+    dest="{{ nagios_nrpe_server_dir }}/nrpe.cfg"
+    owner=root group=root mode=0644
+  notify: restart nagios-nrpe-server
+    ####
+- name: Create check files from template
+  template: >
+    src="check.cfg.j2"
+    dest="{{ nagios_nrpe_server_dir }}/nrpe.d/check_{{ item.name }}.cfg"
+    owner=root group=root mode=0644
+  with_items: "{{ nagios_nrpe_command }}"
+  notify: restart nagios-nrpe-server
+    ####
+- name: Install global plugins
+  copy:
+    src: "{{ item }}"
+    dest: /usr/lib/nagios/plugins/
+    owner: nagios
+    group: nagios
+  with_fileglob:
+    - ./files/plugins/global/*
+    ####
+- name: Ensure chmods on plugins
+  file: dest=/usr/lib/nagios/plugins mode=a+x recurse=yes
+    ####
+- name: Install per-server plugins
+  copy: >
+    src="{{ item }}"
+    dest="{{ nagios_nrpe_server_plugins_dir }}/"
+    owner=root group=root mode=0755
+  with_fileglob:
+    - "./files/plugins/{{ ansible_fqdn }}/*"
+    ####
+- name: Ensure NRPE server is running
+  service: 
+    name: "{{ nagios_nrpe_server_service }}" 
+    state: restarted 
+    enabled: yes

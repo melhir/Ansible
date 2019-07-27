@@ -1,0 +1,20 @@
+#################################
+# THIS FILE IS MANAGED BY ANSIBLE
+# DO NOT EDIT LOCALLY
+#################################
+
+define host {
+        use                     generic
+        host_name               {{ vm.name }}
+        alias                   {{ vm.name }}
+        address                 {{ vm.ip }}
+        hostgroups              {{ vm.groups }}
+        parents					{{ vm.parent }}
+        icon_image              debian.gif
+        statusmap_image         debian.gd2
+        contacts				{{ vm.contacts }}
+
+}
+
+################################
+

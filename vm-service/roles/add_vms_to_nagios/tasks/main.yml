@@ -1,0 +1,12 @@
+---
+- name: Ensures vm directory exist
+  file: path=/usr/local/nagios/etc/objects/vm state=directory
+  ###
+- name: add vm.name to nagios
+  template: >
+    src="hosts.cfg.j2"
+    dest="/usr/local/nagios/etc/objects/vm/{{ vm.name }}.cfg"  
+  with_items: "{{ xen_vman_vms }}"
+  loop_control:
+    loop_var: vm
+  notify: restart-nagios

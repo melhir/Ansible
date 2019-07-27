@@ -1,0 +1,5 @@
+[monitoring]
+nagios
+
+[VMs]
+VM01

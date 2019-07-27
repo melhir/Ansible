@@ -1,0 +1,226 @@
+###############################################################################
+# LOCALHOST.CFG - SAMPLE OBJECT CONFIG FILE FOR MONITORING THIS MACHINE
+#
+# Last Modified: 19-01-2018
+#
+# NOTE: This config file is intended to serve as an *extremely* simple 
+#       example of how you can create configuration entries to monitor
+#       the local (Linux) machine.
+#
+###############################################################################
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# HOST DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define a host for the local machine
+
+
+define host{
+        name                            generic         ; The name of this host template
+        notifications_enabled           1               ; Host notifications are enabled
+        event_handler_enabled           1               ; Host event handler is enabled
+        flap_detection_enabled          1               ; Flap detection is enabled
+        process_perf_data               1               ; Process performance data
+        retain_status_information       1               ; Retain status information across program restarts
+        retain_nonstatus_information    1               ; Retain non-status information across program restarts
+        notification_period             24x7            ; Send host notifications at any time
+        check_period                    24x7            ; By default, Linux hosts are checked round the clock
+        check_interval                  2               ; Actively check the host every 5 minutes
+        retry_interval                  2               ; Schedule host check retries at 1 minute intervals
+        max_check_attempts              5               ; Check each Linux host 10 times (max)
+        check_command                   check-host-alive ; Default command to check Linux hosts
+        notification_interval           480               ; Resend notifications every 2 hours
+        notification_options            d,u,r           ; Only send notifications for specific host states
+        contact_groups                  admins          ; Notifications get sent to the admins by default
+        contacts                        serverlog
+        register                        0               ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+        }
+
+
+
+###############################################################################
+###############################################################################
+#
+# HOST GROUP DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define an optional hostgroup for Linux machines
+define hostgroup{
+        hostgroup_name  all 
+        alias           All directly monitored devices
+        }
+define hostgroup{
+        hostgroup_name  linux 
+        alias           Linux
+        }
+define webservers{
+        hostgroup_name  webservers 
+        alias           Web Servers
+        }
+define webservers{
+        hostgroup_name  ssh 
+        alias           SSH servers
+        }       
+define hostgroup{
+        hostgroup_name  dns
+        alias           DNS servers
+		}
+define hostgroup{
+        hostgroup_name  hdd
+        alias           Machines with external hard drives
+        }
+define hostgroup{
+        hostgroup_name  physical
+        alias           Physical machines
+        }
+
+define hostgroup{
+        hostgroup_name  hdd
+        alias           Machines with external hard drives
+        }
+
+define hostgroup{
+        hostgroup_name  disk2
+        alias           Machines with second storage
+        }
+define hostgroup{
+        hostgroup_name  disk3
+        alias           Machines with third storage
+        }
+
+define hostgroup{
+        hostgroup_name  windows
+        alias           Windows machines
+        }
+define hostgroup{
+        hostgroup_name  snmp
+        alias           Access points, switches
+        }
+
+define hostgroup{
+        hostgroup_name  tftp
+        alias           TFTP
+        }
+
+define hostgroup{
+        hostgroup_name  ftp
+        alias           FTP
+        }
+define hostgroup{
+        hostgroup_name  devel
+        alias           Develop
+        }
+define hostgroup{
+        hostgroup_name  devel2
+        alias           Testing
+        }
+define hostgroup{
+        hostgroup_name icons_devel
+        alias          Icons Devel
+		}
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# SERVICE DEFINITIONS
+#
+###############################################################################
+###############################################################################
+
+
+# Define a service to "ping" the local machine
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             PING
+	check_command			check_ping!100.0,20%!500.0,60%
+        }
+
+
+# Define a service to check the disk space of the root partition
+# on the local machine.  Warning if < 20% free, critical if
+# < 10% free space on partition.
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             Root Partition
+	check_command			check_local_disk!20%!10%!/
+        }
+
+
+
+# Define a service to check the number of currently logged in
+# users on the local machine.  Warning if > 20 users, critical
+# if > 50 users.
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             Current Users
+	check_command			check_local_users!20!50
+        }
+
+
+# Define a service to check the number of currently running procs
+# on the local machine.  Warning if > 250 processes, critical if
+# > 400 users.
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             Total Processes
+	check_command			check_local_procs!250!400!RSZDT
+        }
+
+
+
+# Define a service to check the load on the local machine. 
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             Current Load
+	check_command			check_local_load!5.0,4.0,3.0!10.0,6.0,4.0
+        }
+
+
+
+# Define a service to check the swap usage the local machine. 
+# Critical if less than 10% of swap is free, warning if less than 20% is free
+
+{% if nagios_host_monitor_swap == true %}
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             Swap Usage
+	check_command			check_local_swap!20!10
+        }
+
+{% endif %}
+
+# Define a service to check SSH on the local machine.
+# Disable notifications for this service by default, as not all users may have SSH enabled.
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       localhost
+        service_description             SSH
+	check_command			check_ssh
+	notifications_enabled		1
+        }

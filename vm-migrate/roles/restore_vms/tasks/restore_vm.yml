@@ -1,0 +1,14 @@
+---
+- name: create LVM
+  lvol:
+    vg: "{{ vm.vgs }}"
+    lv: "{{ vm.name }}"
+    size: "{{ hostvars[vm.hypervisor]['size'].stdout }}"
+    shrink: no
+- name: Restore LVM
+  shell: dd if=/mnt/{{ vm.migrate }}/{{ vm.name }} of=/dev/{{ vm.vgs }}/{{ vm.name }}
+- name: modify config file 
+  shell: sed -i s+/usr/lib.*\'+{{ xen_vman_bootloader }}\'+ /home/ansible/{{ vm.name }}.cfg
+- name: Moving config file
+  shell: mv /home/ansible/{{ vm.name }}.cfg /etc/xen/{{ vm.name }}.cfg
+

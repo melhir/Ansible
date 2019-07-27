@@ -1,0 +1,128 @@
+# Ansible role to install, configure, and use etckeeper
+---
+#tasks file for etckeeper
+  - name: Install package python
+    apt:
+      name: python
+      state: present 
+  ###
+  - name: Install package curl
+    apt:
+      name: curl
+      state: present  
+  ###
+  - name: Install package ncdu
+    apt:
+      name: ncdu
+      state: present  
+  ###
+  - name: get hostname
+    command: hostname
+    register: hostname
+  ###
+  - name: create repo
+    uri:
+      url: {{ git_server_api }}
+      method: POST
+      body: "{ \"name\":\"{{ hostname.stdout }}\", \"description\": \"\"  }"
+      body_format: json
+      status_code: 201, 422  ###
+  ###  
+  - name: Check if etckeeper is installed
+    command: dpkg-query -W etckeeper
+    register: etckeeper_check_deb
+    failed_when: etckeeper_check_deb.rc > 1
+    changed_when: etckeeper_check_deb.rc == 1
+  ###
+  - name: Download etckeeper
+    get_url: 
+      url="{{ etckeeper_url }}"
+      dest="/{{ ansible_env.USER }}/{{ etckeeper_package }}.deb"
+    when: etckeeper_check_deb.rc == 1
+  ###
+  - name: Install etckeeper
+    apt: deb="/{{ ansible_env.USER }}/{{ etckeeper_package }}.deb"
+    when: etckeeper_check_deb.rc == 1
+  ###
+  - name: Check for existing initialized etckeeper install
+    command: true
+             creates=/etc/.etckeeper.initialized
+    register: result
+    notify: Record changes in etckeeper
+    when: install
+  ###
+  - name: Install etckeeper VCS
+    apt: pkg=git state=present
+         install_recommends=no
+    when: install and result is changed
+  ###
+  - name: Set etckeeper VCS
+    lineinfile: dest=/etc/etckeeper/etckeeper.conf state=present
+                regexp='^VCS=' line='VCS=git'
+    when: install and result is changed
+  ###
+  - name: Set etckeeper push remote
+    lineinfile: dest=/etc/etckeeper/etckeeper.conf state=present
+                regexp='^PUSH_REMOTE=' line='PUSH_REMOTE=origin'
+    when: install and result is changed
+  ###
+  - name: Ignore password/group/shadow backups
+    lineinfile: dest=/etc/.gitignore state=present
+                line="{{ item }}" create=yes insertafter=EOF
+    with_items:
+    - '# begin section managed by etckeeper (do not edit this section by hand)'
+    - '# end section managed by etckeeper'
+    - 'passwd*'
+    - 'group*'
+    - 'shadow*'
+    - 'gshadow*'
+    - '# ignore {passwd,group,shadow,gshadow}- backup files'
+    when: install and result is changed
+  ###
+  - name: modify sudoers
+    lineinfile: dest=/etc/sudoers state=present
+                line='Defaults env_keep+=SSH_AUTH_SOCK' insertafter=EOF
+    when: install and result is changed
+  ###
+  - name: Initialize etckeeper
+    command: etckeeper init
+             creates=/etc/.git
+    when: install and result is changed
+  ###
+  - name: Initialize git
+    lineinfile: dest=/etc/.git/config state=present
+                line="{{ item }}" create=yes insertafter=EOF
+    with_items:
+    - '[remote "origin"]'
+    - '        url = ssh://gitea@git.domain.com/etckeeper/{{ hostname.stdout }}.git'
+    - '        fetch = +refs/heads/*:refs/remotes/origin/*'
+    when: install and result is changed
+  ###
+  - name: Push to git
+    command: git --git-dir="/etc/.git" push -u origin master
+    when: install and result is changed
+  ###
+  - name: Add motd 
+    blockinfile: 
+      path: /etc/profile
+      insertafter: EOF
+      content: |
+        if [ ${USER} = kj ] || [ ${USER} = pk ]; then
+        sudo etckeeper unclean
+        if [ "$?" -eq "0" ]; then printf '\e[1;31m%s\e[0m\n' "There are uncommitted changes!!"; else printf '\e[1;32m%s\e[0m\n' "Theres no uncommitted changes"; fi
+        if [ -n "$(sudo git --git-dir=/etc/.git --work-tree=/etc status --porcelain)" ]; then printf '\e[1;31m%s\e[0m\n' "Changes not pushed to remote repo"; else printf '\e[1;32m%s\e[0m\n' "All changes pushed to remote repo"; fi
+        fi
+    when: install and result is changed
+   ###   
+  - name: nopasswd etckeeper
+    lineinfile: dest=/etc/sudoers
+                line='%sudo ALL=(ALL:ALL) NOPASSWD:/usr/bin/etckeeper' create=no insertafter=EOF
+    when: install and result is changed
+   ###
+  - name: nopasswd git
+    lineinfile: dest=/etc/sudoers 
+                line="%sudo ALL=(ALL) NOPASSWD:/usr/bin/git" create=no  insertafter=EOF
+    when: install and result is changed
+
+
+    

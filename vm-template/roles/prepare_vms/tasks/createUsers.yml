@@ -1,0 +1,60 @@
+---
+- name: check if {{ user.name }} exists
+  shell: |
+    chroot /mnt/{{ vm.name }} getent passwd "{{ user.name }}" > /dev/null 2&>1
+    if [ $? -eq 0 ]; then
+        echo "1"
+    else
+        echo "0"
+    fi
+  args:
+    executable: /bin/bash
+  register: check_user
+
+- name: Create users {{ user.name }}
+  shell: chroot /mnt/{{ vm.name }} /usr/sbin/useradd -s /bin/bash -g users -G sudo -m "{{ user.name }}"
+  when: check_user.stdout == "0"
+- name: Password for user {{ user.name }}
+  copy: 
+    content: "{{ user.password }}" 
+    dest: /mnt/{{ vm.name }}/home/{{ user.name }}/password
+    force: yes
+  when: user.password is defined
+- name: check if user tester exists
+  shell: |
+    chroot /mnt/{{ vm.name }} getent passwd "tester" > /dev/null 2&>1
+    if [ $? -eq 0 ]; then
+        echo "1"
+    else
+        echo "0"
+    fi
+  args:
+    executable: /bin/bash
+  register: check_user_tester
+
+- name: Delete user tester at ({{ vm.name }})
+  shell: chroot /mnt/{{ vm.name }} /usr/sbin/userdel tester
+  when: check_user_tester.stdout == "1"
+
+- name: Set password for {{ user.name }}
+  shell: chroot /mnt/{{ vm.name }} /bin/echo "{{ user.name }}:{{ user.password }}" | chroot /mnt/{{ vm.name }} /usr/sbin/chpasswd
+  when: user.password is defined
+
+- name: Set permission for ansible user
+  shell: chroot /mnt/{{ vm.name }} /bin/echo "{{ user.name }}    ALL=(ALL)    NOPASSWD:ALL" >> "/mnt/{{ vm.name }}/etc/sudoers"
+  when: user.name == "ansible"
+
+- name: Create .ssh directory for users at ({{ vm.name }})
+  file:
+    path: "/mnt/{{ vm.name }}/home/{{ user.name }}/.ssh"
+    mode: 0700
+    state: directory
+  
+- name: Deploy specified public keys for users at new VM ({{ vm.name }}) 
+  copy:
+    content: "{{ user.key }}"
+    dest: "/mnt/{{ vm.name }}/home/{{ user.name }}/.ssh/authorized_keys"
+    mode: 0600
+
+- name: Set correct owner for authorized_keys at ({{ vm.name }})
+  shell: chroot /mnt/{{ vm.name }} /bin/chown -Rc {{ user.name }}:users /home/{{ user.name }}/.ssh/

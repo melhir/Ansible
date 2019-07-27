@@ -1,0 +1,36 @@
+---
+- name: Test if VM {{ vm.name }}  exists
+  stat:
+    path: "/{{ xen_vman_vm_config_path }}/{{ vm.name }}.cfg"
+  register: vm_config_file
+  changed_when: False
+- name: Get old creation date from {{ vm.name }} (1/2)
+  shell: "sed -n 's/^# created at:[ ]\\+//p' /{{ xen_vman_vm_config_path }}/{{ vm.name }}.cfg"
+  register: creation_date
+  when: vm_config_file.stat.exists
+  changed_when: False
+- name: Get old creation date from {{ vm.name }} (2/2)
+  set_fact:
+    creation_date: "{{ creation_date.stdout }}"
+  when: vm_config_file.stat.exists
+  changed_when: False
+- name: Set creation date for {{ vm.name }}
+  set_fact:
+    creation_date: "{{ ansible_date_time.iso8601 }}"
+  when: not vm_config_file.stat.exists
+- name: Create vm config file
+  template: >
+    src="vm.cfg.j2"
+    dest="/{{ xen_vman_vm_config_path }}/{{ vm.name }}.cfg"
+- name: check if lvm exists
+  stat:
+      path: /dev/{{ vm.vgs }}/{{ vm.name }}
+  register: lvm_result
+- name: Prepare LVM
+  include_tasks:  prepare_lvm_debian.yml
+  when: not vm_config_file.stat.exists and vm.auto_install|default(xen_vman_default_auto_install) and vm.os.type == 'debian'
+
+- name: Prepare OS
+  include_tasks: install_system.yml
+  when: startvm == true
+

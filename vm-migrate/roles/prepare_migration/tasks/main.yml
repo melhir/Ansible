@@ -1,0 +1,14 @@
+---
+ - name: create lvm on source
+   include_tasks: create_lvm.yml
+   with_items: "{{ xen_vman_vms }}"
+   when: vm.hypervisor == inventory_hostname
+   loop_control:
+    loop_var: vm
+ - name: create lvm on target
+   include_tasks: create_lvm.yml
+   with_items: "{{ xen_vman_vms }}"
+   when: vm.target == inventory_hostname
+   loop_control:
+    loop_var: vm
+

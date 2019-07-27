@@ -1,0 +1,79 @@
+---
+- name: Mount LVM of ({{ vm.name }})
+  mount:
+    src: "/dev/{{ vm.vgs }}/{{ vm.name }}"
+    path: "/mnt/{{ vm.name }}"
+    fstype: ext4
+    state: mounted
+
+- name: Change hostname
+  shell: echo "{{ vm.name }}" > "/mnt/{{ vm.name }}/etc/hostname"
+
+- name: Create a proper hosts file for new system ({{ vm.name }})
+  template:
+    dest: /mnt/{{ vm.name }}/etc/hosts
+    group: root
+    owner: root
+    mode: 0644
+    src: hosts.j2
+
+- name: Create users and delete tester
+  include_tasks: createUsers.yml
+  with_items: "{{ users }}"
+  loop_control:
+   loop_var: user
+
+- name: Set UsePubkey yes
+  lineinfile: dest="/mnt/{{ vm.name }}/etc/ssh/sshd_config" regexp="^[#]*PubkeykAuthentication yes" line="PubkeyAuthentication yes" state=present
+
+- name: Set PasswordAuthentication no
+  lineinfile: dest="/mnt/{{ vm.name }}/etc/ssh/sshd_config" regexp="^[#]*PasswordAuthentication yes" line="PasswordAuthentication no" state=present
+
+- name: Create a proper fstab for new system ({{ vm.name }})
+  template:
+    dest: /mnt/{{ vm.name }}/etc/fstab
+    group: root
+    owner: root
+    mode: 0644
+    src: fstab.j2
+
+- name: Generate a proper simplified Debian network configuration
+  template:
+    dest: /mnt/{{ vm.name }}/etc/network/interfaces
+    group: root
+    owner: root
+    mode: 0644
+    src: interfaces.j2
+- name: Disable recommended and suggested packages
+  template:
+    dest: /mnt/{{ vm.name }}/etc/apt/apt.conf
+    group: root
+    owner: root
+    mode: 644
+    src: apt.conf.j2
+- name: Removing tester directory 
+  file:
+    path: /mnt/{{ vm.name }}/home/tester
+    state: absent
+- name: Unmount LVM of {{ vm.name }}
+  mount:
+    src: "/dev/{{ vm.vgs }}/{{ vm.name }}"
+    path: "/mnt/{{ vm.name }}"
+    fstype: ext4
+    state: unmounted  
+- name: Remove mount from fstab
+  mount:
+    name:  "/dev/{{ vm.vgs }}/{{ vm.name }}"
+    src:  "/dev/{{ vm.vgs }}/{{ vm.name }}"
+    path: "/mnt/{{ vm.name }}"
+    fstype: ext4
+    state: absent
+
+- lineinfile:
+    path: /etc/fstab
+    line: "/dev/{{vm.vgs}}/{{vm.name}} /mnt/{{vm.name}} ext4 defaults 0 0"
+    state: absent
+
+- name: Boot new machine
+  shell: xl create /{{ xen_vman_vm_config_path }}/{{ vm.name }}.cfg
+

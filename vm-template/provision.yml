@@ -1,0 +1,17 @@
+---
+# Prerequisite:
+# -Ansible version 2.4
+# -Python-netaddr
+# -Anisble private key (add "IdentityFile ~/.ssh/id_rsa_ansible" - in configuration file ~/.ssh/config or /etc/ssh/ssh_config)
+- hosts: hypervisors
+  user: ansible
+  vars_files:
+    - vars/defaults.yml
+    - vars/vms.yml
+  vars:
+    - debian_template: /home/'{{ ansible_user_id }}'/Documents/debian-template.raw
+    - startvm: false
+  roles: 
+    - prepare_vms
+  become: yes
+  

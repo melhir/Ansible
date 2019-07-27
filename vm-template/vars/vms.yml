@@ -1,0 +1,28 @@
+---
+ xen_vman_vms:
+ - name: VM01
+   memory: 4096
+   vcpus: 2
+   size: 30480
+   interfaces:
+   - ip: 192.168.0.141
+     netmask: 255.255.255.0
+     mac: 00:16:3E:00:01:41
+     bridge: br0
+     ethernet: eth0
+     gateway: 192.168.0.1
+   os:
+     type: debian
+     version: 9.2.1
+   storage_type: LVM
+   vgs: VM
+   groups: all, linux, ssh
+   contacts: melhir
+   hypervisor: H01
+   isrunning: false #dont change it 
+ users:
+   - name: melhir
+     password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+     key: $KEY
+   - name: ansible
+     key: $ANSIBLE-PUBLIC-KEY$

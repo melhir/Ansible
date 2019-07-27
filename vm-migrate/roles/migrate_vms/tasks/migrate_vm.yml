@@ -1,0 +1,23 @@
+---
+- name: shutdown machine
+  shell: xl shutdown {{ vm.name }}
+- name: waiting for machine to shutdown
+  shell: sleep 60
+- name: get lvm size
+  shell: lvs /dev/VM/{{ vm.name }} -o LV_SIZE --noheadings --units g | tr -d " \t\n\r"
+  register: size
+- name: Cloning LVM
+  shell: dd if=/dev/VM/{{ vm.name }} of=/mnt/{{ vm.migration }}/{{ vm.name }}
+- name: Migrate lvm to destination
+  synchronize:
+     src: /mnt/{{ vm.migration }}/{{ vm.name }}
+     dest: /mnt/{{ vm.migration }}/
+     mode: pull
+  delegate_to: "{{ vm.target }}"
+- name: migrate config file to destination
+  synchronize:
+     src: /etc/xen/{{ vm.name }}.cfg
+     dest: /home/ansible/
+     mode: pull
+  delegate_to: "{{ vm.target }}"
+

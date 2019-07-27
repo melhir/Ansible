@@ -1,0 +1,19 @@
+---
+- name: create LVM
+  lvol:
+    vg: "{{ vm.vgs }}"
+    lv: "{{ vm.migration }}"
+    size: "{{ vm.migration_size }}"
+    shrink: no
+- name: Create a ext4 filesystem on /dev/VM/{{ vm.migration }}
+  filesystem:
+    fstype: ext4
+    dev: /dev/VM/{{ vm.migration }}
+- name: Mount LVM of {{ vm.migration }}
+  mount:
+    src: "/dev/{{ vm.vgs }}/{{ vm.migration }}"
+    path: "/mnt/{{ vm.migration }}"
+    fstype: ext4
+    state: mounted
+
+

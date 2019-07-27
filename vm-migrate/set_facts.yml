@@ -1,0 +1,37 @@
+---
+- name: Get correct path for xl if needed
+  shell: which xl
+  register: xen_vman_xl_path
+  when: xen_vman_xl_path is not defined
+  changed_when: False
+
+- name: Set correct path for xl if needed
+  set_fact:
+    xen_vman_xl_path: "{{ xen_vman_xl_path.stdout }}"
+  when: xen_vman_xl_path.stdout is defined
+  changed_when: False
+
+- name: Get currently running kernel
+  shell: uname -r
+  register: xen_vman_host_kernel
+  changed_when: False
+
+- name: Set VM kernel to the currently running kernel if not specifed
+  set_fact:
+    xen_vman_default_kernel: /boot/vmlinuz-{{ xen_vman_host_kernel.stdout }}
+  when: xen_vman_default_kernel is not defined
+
+- name: Set VM initrd to currently used initrd if not specifed
+  set_fact:
+    xen_vman_default_initrd: /boot/initrd.img-{{ xen_vman_host_kernel.stdout }}
+  when: xen_vman_default_initrd is not defined
+
+- name: Get currently running xen version
+  shell: xl info | grep xen_version | awk '{ print $3 }'| cut -c 1-3
+  register: xen_vman_xen_version 
+  changed_when: False
+
+- name: Set pygub path
+  set_fact:
+    xen_vman_bootloader: /usr/lib/xen-{{ xen_vman_xen_version.stdout }}/bin/pygrub
+  when: xen_vman_bootloader is not defined

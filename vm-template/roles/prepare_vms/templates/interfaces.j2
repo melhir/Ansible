@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+
+source-directory /etc/network/interfaces.d
+
+
+
+{% for i in vm.interfaces %} 
+auto {{ i.ethernet }}
+iface {{ i.ethernet }} inet static
+	address {{ i.ip }}
+	netmask {{ i.netmask }}
+	dns-nameservers {{ i.nameserver|default(xen_vman_default_nameserver)|join(' ') }}
+	dns-search {{ xen_vman_dns_search }}
+{% if i.gateway is defined %}
+		gateway {{ i.gateway }}
+{% endif %}
+{% endfor %}

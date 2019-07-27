@@ -1,0 +1,17 @@
+---
+- name: Unmount LVM of {{ vm.migration }}
+  mount:
+    src: "/dev/{{ vm.vgs }}/{{ vm.migration }}"
+    path: "/mnt/{{ vm.migration }}"
+    fstype: ext4
+    state: unmounted  
+- lineinfile:
+    path: /etc/fstab
+    line: "/dev/{{vm.vgs}}/{{vm.migration}} /mnt/{{vm.migration}} ext4 defaults 0 0"
+    state: absent
+- name: Remove the logical volume.
+  lvol:
+    vg: "{{ vm.vgs }}"
+    lv: "{{ vm.migration }}"
+    state: absent
+    force: yes

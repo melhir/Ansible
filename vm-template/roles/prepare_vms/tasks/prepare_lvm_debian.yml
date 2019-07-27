@@ -1,0 +1,60 @@
+---
+- name: create LVM
+  lvol:
+    vg: "{{ vm.vgs }}"
+    lv: "{{ vm.name }}"
+    size: "{{ vm.size }}"
+    shrink: no
+
+- name: check if template exists localy 
+  local_action: stat path="{{ debian_template }}"
+  register: template  
+  become: no
+  become_user: '{{ ansible_user_id }}'
+
+- name: copy lvm-template
+  synchronize:
+    src: "{{ debian_template }}"
+    dest: /mnt/storage/debian-template.raw
+    compress: yes
+  when: template.stat.exists
+
+- command: mountpoint -q /mnt/{{ vm.name }}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
+
+- name: check if image need to be copied to lvm
+  stat:
+      path: /mnt/storage/debian-template.raw.{{ vm.name }}
+  register: dd_result
+
+- name: writing template to lvm
+  shell: dd if=/mnt/storage/debian-template.raw of=/dev/{{ vm.vgs }}/{{ vm.name }}
+  when: dd_result.stat.exists == false
+ 
+- name: Create the file, if it doesnt exist already
+  file:
+    path: /mnt/storage/debian-template.raw.{{ vm.name }}
+    state: touch
+  when: dd_result.stat.exists == False 
+
+- name: check if image has been copied
+  stat:
+      path: /mnt/storage/debian-template.raw.{{ vm.name }}
+  register: dd_result
+
+- name: efsck 
+  shell: e2fsck -f -y /dev/{{ vm.vgs }}/{{ vm.name }}
+  when:  vm.size is defined 
+
+- name: resize partition
+  filesystem:
+      fstype: ext4
+      dev: "/dev/{{ vm.vgs }}/{{ vm.name }}"
+      resizefs: yes
+  when:  vm.size is defined 
+
+- set_fact:
+    startvm: true
+  when: dd_result.stat.exists == true

@@ -1,0 +1,7 @@
+---
+- name: restore vm 
+  include_tasks: restore_vm.yml
+  with_items: "{{ xen_vman_vms }}"
+  when: vm.target == inventory_hostname
+  loop_control:
+   loop_var: vm

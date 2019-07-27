@@ -1,0 +1,32 @@
+########
+########
+# Prerequisite:
+# - prepared host with ansible key and available through lan and have access to internet
+# - filled hosts file with virtual machine that need to be prepared 
+# - created repository for this host on git server
+  ###
+- hosts: VMs
+  user: ansible 
+  vars_files:
+     - vars/nagios_client_vars.yml
+  vars:
+    - etckeeper_vcs: git
+    - etckeeper_package: etckeeper_1.18.2-1ubuntu1_all.deb
+    - etckeeper_url: http://archive.ubuntu.com/ubuntu/pool/main/e/etckeeper/etckeeper_1.18.2-1ubuntu1_all.deb
+    - git_server_api: https://git.domian.com/api/v1/user/repos?access_token=$TOKEN
+    - commit: true
+    - etckeeper_message: "changes from Ansible play running as {{ ansible_user_id }}"
+  roles:
+     - role: prepare_checks 
+     - { role: add_etckeeper, install: true }
+  become: yes
+  become_flags: "-E"
+  ###
+- hosts: monitoring
+  user: ansible
+  vars_files:
+    - vars/vms.yml
+  roles:
+    - role: add_vms_to_nagios 
+  become: yes
+

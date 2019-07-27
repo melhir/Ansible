@@ -1,0 +1,82 @@
+#################################
+# THIS FILE IS MANAGED BY ANSIBLE
+# DO NOT EDIT LOCALLY
+#################################
+
+define hostgroup{
+        hostgroup_name  all 
+        alias           All directly monitored devices
+        }
+define hostgroup{
+        hostgroup_name  linux 
+        alias           Linux
+        }
+define webservers{
+        hostgroup_name  webservers 
+        alias           Web Servers
+        }
+define webservers{
+        hostgroup_name  ssh 
+        alias           SSH servers
+        }       
+define hostgroup{
+        hostgroup_name  dns
+        alias           DNS servers
+		}
+define hostgroup{
+        hostgroup_name  hdd
+        alias           Machines with external hard drives
+        }
+define hostgroup{
+        hostgroup_name  physical
+        alias           Physical machines
+        }
+
+define hostgroup{
+        hostgroup_name  hdd
+        alias           Machines with external hard drives
+        }
+
+define hostgroup{
+        hostgroup_name  disk2
+        alias           Machines with second storage
+        }
+define hostgroup{
+        hostgroup_name  disk3
+        alias           Machines with third storage
+        }
+
+define hostgroup{
+        hostgroup_name  windows
+        alias           Windows machines
+        }
+define hostgroup{
+        hostgroup_name  snmp
+        alias           Access points, switches
+        }
+
+define hostgroup{
+        hostgroup_name  tftp
+        alias           TFTP
+        }
+
+define hostgroup{
+        hostgroup_name  ftp
+        alias           FTP
+        }
+define hostgroup{
+        hostgroup_name  devel
+        alias           Develop
+        }
+define hostgroup{
+        hostgroup_name  devel2
+        alias           Testing
+        }
+define hostgroup{
+        hostgroup_name icons_devel
+        alias          Icons Devel
+}
+define hostgroup{
+        hostgroup_name cameras
+        alias          Cameras
+}
